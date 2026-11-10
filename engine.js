@@ -1,22 +1,22 @@
-export const moodNames=['느긋함','신남','경계','삐침','졸림'];
-export const places=['방석','방문','거실 입구','거실','욕실 앞','욕실 안'];
-export function createState(rng=Math.random){return {pos:0,mood:Math.floor(rng()*5),trust:50,turn:0,ants:0,lastAnt:-3,lastChoice:-1,repeat:0,stalls:0};}
-export function choose(s,choice,rng=Math.random){
-if(!Number.isInteger(choice)||choice<0||choice>2)throw new Error('Invalid choice');
-s.turn++;s.repeat=s.lastChoice===choice?s.repeat+1:0;s.lastChoice=choice;
-const base=[[.8,.65,.5],[.55,.7,.8],[.75,.45,.3],[.65,.4,.35],[.45,.8,.55]][s.mood][choice];
-const success=rng()<Math.max(.15,Math.min(.95,base+(s.trust-50)/250-s.repeat*.12))||s.stalls>=3;
-let title,text,line,seconds;
-if(success){s.pos=Math.min(5,s.pos+1);s.stalls=0;s.trust=Math.min(100,s.trust+5);title='한 걸음 앞으로';text='챠챠가 느릿느릿 따라옵니다.';line=['알았어… 천천히 가.','간식 약속, 기억하고 있어.','그 장난감도 같이 씻는 거야?'][choice];seconds=2}
-else{s.stalls++;const retreat=rng()<.25&&s.pos>0; if(retreat)s.pos--;s.trust=Math.max(0,s.trust-3);title=retreat?'다시 익숙한 곳으로':'여기서 잠깐 쉴게';text=retreat?'챠챠가 한 지점 뒤로 돌아갑니다.':'챠챠가 배를 보이고 뒹굴거립니다.';line=['내 이름은 들었어. 가겠다고는 안 했어.','간식은 여기서 먹어도 되잖아.','놀자는 뜻 아니었어?'][choice];seconds=retreat?4:3}
-if(rng()<.3)s.mood=Math.floor(rng()*5);
-return {title,text,line,seconds};
-}
-const antRows=[
-[['개미 배웅','고개만 돌려 개미를 배웅합니다.','너도 어디 가니… 난 천천히 갈 건데.',2,0],['바닥 관찰','턱을 바닥에 대고 관찰합니다.','가까이서 보니까… 제법 바쁘네.',4,0]],
-[['작은 친구','앞발을 통통 구르며 놉니다.','작은 친구다! 같이 놀자!',4,0],['개미 따라가기','개미가 가는 쪽으로 따라갑니다.','어디 가? 나도 갈래!',5,2]],
-[['깜짝이야','코를 가까이 댔다가 움찔합니다.','방금… 나한테 온 거야?',3,0],['길 양보','개미를 피해 뒤로 물러납니다.','이 길은 네가 먼저 써.',4,-1]],
-[['못 본 척','고개를 돌리고 이동을 준비합니다.','흥. 너한테도 관심 없어.',1,0],['새로운 말동무','개미 앞에 눌러앉습니다.','적어도 얘는 씻으란 말은 안 하네.',5,0]],
-[['졸린 눈','눈으로 따라가다 하품합니다.','하나… 둘… 한 마리였나…',3,0],['작은 낮잠','엎드려 개미를 보다가 졸기 시작합니다.','지나가면… 깨워 줘…',6,0]]
-];
-export function antEvent(s,rng=Math.random){const mood=s.mood;const [title,text,line,seconds,move]=antRows[mood][rng()<.7?0:1];s.ants++;s.lastAnt=s.turn;const delta=move===2?(rng()<.5?1:-1):move;s.pos=Math.max(0,Math.min(4,s.pos+delta));return {title:'🐜 '+title,text:text+(move===2?(delta>0?' 욕실 쪽으로 한 지점 이동합니다.':' 방 쪽으로 한 지점 돌아갑니다.') :''),line,seconds};}
+export const moods=['느긋함','신남','경계','삐침','졸림'];
+export const END=1880;
+export function state(rng=Math.random){return {x:140,mood:Math.floor(rng()*5),trust:50,last:'',repeat:0,stalls:0,turn:0,ants:0,lastAnt:-3,mat:false,door:false,ball:1080,previous:[],context:''};}
+const A=(id,label,kind,type,zone=null)=>({id,label,kind,type,zone});
+export const actions=[
+A('call','작은 목소리로 부른다',0,'calm'),A('wait','조금 떨어져 기다린다',0,'calm'),A('hand','손바닥을 내민다',0,'calm'),A('praise','눈을 맞추며 칭찬한다',0,'calm'),A('hum','나지막이 콧노래를 부른다',0,'calm'),A('treat','앞쪽에 간식을 놓는다',1,'food'),A('bag','간식 봉지를 살짝 흔든다',1,'food'),A('toy','삑삑이를 흔든다',1,'play'),A('lead','먼저 몇 걸음 걸어간다',1,'lead'),A('hop','앞에서 가볍게 뛰어본다',1,'play'),
+A('door','방문을 열어 둔다',2,'door','bed'),A('doll','방 인형을 들고 나간다',2,'play','bed'),A('sit','방석 옆에 잠깐 앉는다',2,'calm','bed'),A('peek','문밖에서 얼굴을 내민다',2,'lead','bed'),A('ball','공을 욕실 쪽으로 굴린다',2,'ball','living'),A('rug','러그를 톡톡 두드린다',2,'calm','living'),A('sun','햇볕 바깥에서 부른다',2,'lead','living'),A('belly','배를 부드럽게 쓰다듬는다',2,'calm','living'),A('lie','옆에 같이 누워 본다',2,'calm','living'),A('sofa','소파 옆을 돌아 걸어간다',2,'lead','living'),A('mat','미끄럼 방지 매트를 깐다',2,'mat','bath'),A('towel','수건 냄새를 맡게 한다',2,'calm','bath'),A('open','욕실 문을 더 열어 둔다',2,'open','bath'),A('inside','욕실 안에서 기다린다',2,'lead','bath')];
+export function zone(s){return s.x<580?'bed':s.x<1450?'living':'bath';}
+export function context(s){if(s.context)return s.context;const z=zone(s);return z==='bed'?(s.x<280?'방석과의 이별':'문턱 앞의 망설임'):z==='living'?(s.x<830?'거실의 낯익은 냄새':s.x<1050?'소파의 유혹':s.x<1250?'햇볕 한 조각':'러그 위의 고민'):(s.mat?'매트까지 한 걸음':'차가운 타일 앞에서');}
+function shuffle(a,r){a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a;}
+export function drawChoices(s,r=Math.random){const pool=actions.filter(a=>(!a.zone||a.zone===zone(s))&&!(a.id==='mat'&&s.mat)&&!(a.id==='door'&&s.door)&&!(a.id==='open'&&s.open));let picked=[0,1,2].map(k=>shuffle(pool.filter(a=>a.kind===k),r)[0]);if(picked.every(a=>s.previous.includes(a.id))){const replacement=pool.find(a=>a.kind===0&&!s.previous.includes(a.id));if(replacement)picked[0]=replacement;}picked=shuffle(picked,r);s.previous=picked.map(a=>a.id);return picked;}
+export function choose(s,id,r=Math.random){const a=actions.find(a=>a.id===id);if(!a||(!s.previous.includes(id)))throw Error('현재 선택지가 아닙니다');s.turn++;s.repeat=s.last===id?s.repeat+1:0;s.last=id;const from=s.x;const fixed=['door','mat','open'].includes(a.type);if(a.type==='mat')s.mat=true;if(a.type==='door')s.door=true;if(a.type==='open')s.open=true;
+const rates={calm:[.8,.5,.8,.65,.4],food:[.7,.7,.5,.45,.8],play:[.5,.82,.3,.3,.5],lead:[.65,.75,.5,.5,.4],ball:[.55,.85,.3,.35,.55]};const rate=(rates[a.type]||[.75,.75,.85,.7,.65])[s.mood]+(s.trust-50)/300-s.repeat*.12+(s.mat&&from>=1450?.18:0);const ok=fixed||s.stalls>=3||r()<Math.min(.95,Math.max(.15,rate));let to=from,pose='stand',line='',title='',hold=1;
+if(ok){s.stalls=0;s.trust=Math.min(100,s.trust+5);to=Math.min(END,from+(a.type==='calm'?145:230));title='조금 더 가까이';line=a.type==='food'?'간식 약속, 기억하고 있어.':a.type==='mat'?'이 바닥은… 괜찮은데?':a.type==='play'||a.type==='ball'?'좋아! 그건 내 거야!':'알았어… 천천히 가.';if(a.type==='ball')s.ball=Math.min(1750,from+250)}else{s.stalls++;s.trust=Math.max(0,s.trust-3);const fail=r();if(fail<.18&&from>580){to=140;pose='sleep';title='방석으로 돌아갈래';line='아무래도 집이 최고야. 방석도 집이고.';hold=2}else if(fail<.4){to=Math.max(140,from-200);title='잠깐, 돌아갈래';line='생각해 봤는데… 아직 아니야.'}else if(fail<.7){pose='roll';title='일단 뒹굴고 생각하자';line='여기도 꽤 씻은 것 같은데?';hold=3}else{pose='sit';title='여기에 눌러앉기';line='내 자리는 여기로 정했어.';hold=3}}
+s.context=pose==='roll'?'뒹굴기가 끝난 자리':pose==='sit'?'움직이기 싫은 오후':pose==='sleep'?'다시 만난 방석':'';s.x=to;const mood=s.mood;if(r()<.25)s.mood=Math.floor(r()*5);return {from,to,pose,line,title,hold,mood,speed:mood===1&&ok?180:110};}
+const ants=[[
+['stand','너도 어디 가니… 난 천천히 갈 건데.',2,0],['sit','가까이서 보니까… 제법 바쁘네.',4,0]],
+[['play','작은 친구다! 같이 놀자!',4,0],['stand','어디 가? 나도 갈래!',1,1]],
+[['stand','방금… 나한테 온 거야?',3,0],['stand','이 길은 네가 먼저 써.',2,-1]],
+[['stand','흥. 너한테도 관심 없어.',1,0],['sit','적어도 얘는 씻으란 말은 안 하네.',5,0]],
+[['sit','하나… 둘… 한 마리였나…',3,0],['sleep','지나가면… 깨워 줘…',6,0]]];
+export function antEvent(s,r=Math.random){const mood=s.mood;const [pose,line,hold,move]=ants[mood][r()<.7?0:1];const from=s.x;const dir=move===1?(r()<.5?1:-1):-1;const to=Math.min(Math.max(from,1750),Math.max(140,from+(move?dir*180:0)));s.x=to;s.ants++;s.lastAnt=s.turn;s.context=pose==='sleep'?'개미를 보다가 깜빡':'작은 손님이 지나간 자리';return {from,to,pose,line,hold,title:'개미다! 잠깐, 저건 뭐지?',speed:100,mood,antFrom:from+65,antTo:Math.min(1800,Math.max(100,from+dir*260))};}
