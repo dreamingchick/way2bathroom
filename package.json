@@ -1,9 +1,1 @@
-{
-  "name": "way2bathroom",
-  "version": "0.1.0",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "test": "node test.mjs"
-  }
-}
+{"name":"way2bathroom","private":true,"type":"module","version":"0.2.0","scripts":{"test":"node test.mjs"}}
