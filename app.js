@@ -14,7 +14,7 @@ function cameFromArcade() {
     return Boolean(entered || sessionStorage.getItem('garu-arcade-entry') === '1');
   } catch { return Boolean(entered); }
 }
-if(cameFromArcade())document.getElementById('arcade-home')?.removeAttribute('hidden');
+document.getElementById('arcade-home')?.removeAttribute('hidden');
 import {state,moods,END,zone,context,drawChoices,choose,antEvent} from './engine.js';
 const $=id=>document.getElementById(id),canvas=$('scene'),ctx=canvas.getContext('2d');let s=state(),x=s.x,camera=0,pose='stand',facing=1,walking=false,active=false,busy=false,started=0,ant=null;let poseSince=performance.now(); const chacha=new Image(); chacha.src='./chacha-poses.png'; $('start').disabled=true; $('start').textContent='챠챠가 준비하고 있어요…'; chacha.decode().then(()=>{$('start').disabled=false;$('preview-roll').disabled=false;$('start').textContent='챠챠 부르기 · 시작 →'}).catch(()=>{$('start').textContent='챠챠 이미지를 불러오지 못했어요. 새로고침해 주세요.'}); const W=2100;let lastFrame=performance.now();
 const fmt=ms=>{const n=Math.floor(ms/10);return String(Math.floor(n/6000)).padStart(2,'0')+':'+String(Math.floor(n/100)%60).padStart(2,'0')+'.'+String(n%100).padStart(2,'0')};
